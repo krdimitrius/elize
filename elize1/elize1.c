@@ -1,8 +1,8 @@
 /**
  * @file tpvalg.c
- * @author Дмитрий Крысин <krysin@tecon.ru>
+ * @author Krysin Dmitriy <krdimitrius@gmail.comrysin@tecon.ru>
  * @date 2020
- * @brief
+ * @brief ELIZE
  */
 
 //------------------------------------------------------------------------------
@@ -11,31 +11,52 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
+
+#define STRING_SIZE 255
 
 char copyright[] = "\n  ELIZA/DOCTOR"
 "\n  CREATED BY JOSEPH WEIZENBAUM"
 "\n  THIS VERSION BY JEFF SHRAGER"
-"\n  EDITED AND MODIFIED FOR MITS 8K BASIC 4.0 BY STEVE NORTH"
-"\n  CREATIVE COMPUTING PO BOX 789-M MORRISTOWN NJ 07960";
+"\n  EDITED AND MODIFIED FOR C MITS 8K BASIC 4.0 BY STEVE NORTH"
+"\n  CREATIVE COMPUTING PO BOX 789-M MORRISTOWN NJ 07960"
+"\n";
 
-//KEYWORDS
-char keywords[16][] = {
-"CAN YOU","CAN I","YOU ARE","YOURE","I DONT","I FEEL",
-"WHY DONT YOU","WHY CANT I","ARE YOU","I CANT","I AM"," IM ",
-"YOU","I WANT","WHAT","HOW","WHO","WHERE","WHEN","WHY",
-"NAME","CAUSE","SORRY","DREAM","HELLO","HI","MAYBE",
-"NO","YOUR","ALWAYS","THINK","ALIKE","YES","FRIEND",
-"COMPUTER","NOKEYFOUND",
+char elize_hi[] = "HI! I'M ELIZA. WHAT'S YOUR PROBLEM?";
+char elize_dontrepeat[] = "PLEASE DON'T REPEAT YOURSELF!";
+char elize_shut[] = "SHUT";
+char elize_shutup[] = "SHUT UP...";
+
+// ключевые слова
+#define KEYWORDS_SIZE 16
+#define KEYWORDS_NUM (sizeof(keywords)/KEYWORDS_SIZE)
+char keywords[][16] = {
+"CAN YOU", "CAN I", "YOU ARE", "YOURE", "I DONT",
+"I FEEL", "WHY DONT YOU", "WHY CANT I", "ARE YOU", "I CANT",
+"I AM", " IM ", "YOU", "I WANT", "WHAT",
+"HOW", "WHO", "WHERE", "WHEN", "WHY",
+"NAME", "CAUSE", "SORRY", "DREAM", "HELLO",
+"HI", "MAYBE", "NO", "YOUR", "ALWAYS",
+"THINK", "ALIKE", "YES", "FRIEND", "COMPUTER",
+"NOKEYFOUND",
 };
 
-//STRING DATA FOR CONJUGATIONS
-char conjstrs[10][] = {
-	" ARE "," AM ","WERE ","WAS "," YOU "," I ","YOUR ","MY ".,
-	" IVE "," YOUVE "," IM "," YOURE ",
+// строки для замены
+#define CONJUGATION_SIZE 10
+#define CONJUGATION_NUM (sizeof(conjugation)/CONJUGATION_SIZE)
+char conjugation[][10] = {
+	" ARE "," AM ",
+	"WERE ","WAS ",
+	" YOU "," I ",
+	"YOUR ","MY ",
+	" IVE "," YOUVE ",
+	" IM "," YOURE ",
 };
 
-// REPLIES
-char replies[100][] = {
+// реплики
+#define REPLIES_SIZE 100
+#define REPLIES_NUM (sizeof(replies)/REPLIES_SIZE)
+char replies[][REPLIES_SIZE] = {
 	"DON'T YOU BELIEVE THAT I CAN.",
 	"PERHAPS YOU WOULD LIKE TO BE ABLE TO.",
 	"YOU WANT ME TO BE ABLE TO*",
@@ -67,7 +88,7 @@ char replies[100][] = {
 	"HOW LONG HAVE YOU BEEN*",
 	"DO YOU BELIEVE IT IS NORMAL TO BE*",
 	"DO YOU ENJOY BEING*",
-	"WE WERE DISCUSSING YOU-- NOT ME.",
+	"WE WERE DISCUSSING YOU, NOT ME.",
 	"OH, I*",
 	"YOU'RE NOT REALLY TALKING ABOUT ME. ARE YOU?",
 	"WHAT WOULD IT MEAN TO YOU IF YOU GOT*",
@@ -85,7 +106,7 @@ char replies[100][] = {
 	"HAVE YOU ASKED SUCH QUESTIONS BEFORE?",
 	"WHAT ELSE COMES TO MIND WHEN YOU ASK THAT?",
 	"NAMES DON'T INTEREST ME.",
-	"I DON'T CARE ABOUT NAMES-- PLEASE GO ON.",
+	"I DON'T CARE ABOUT NAMES, PLEASE GO ON.",
 	"IS THAT THE REAL REASON?",
 	"DON'T ANY OTHER REASONS COME TO MIND?",
 	"DOES THAT REASON EXPLAIN ANYTHING ELSE?",
@@ -98,7 +119,7 @@ char replies[100][] = {
 	"DO YOU DREAM OFTEN?",
 	"WHAT PERSONS APPEAR IN YOUR DREAMS?",
 	"ARE YOU DISTURBED BY YOUR DREAMS?",
-	"HOW DO YOU DO .,. PLEASE STATE YOUR PROBLEM.",
+	"HOW DO YOU DO? PLEASE STATE YOUR PROBLEM.",
 	"YOU DON'T SEEM QUITE CERTAIN.",
 	"WHY THE UNCERTAIN TONE?",
 	"CAN'T YOU BE MORE POSITIVE?",
@@ -150,76 +171,143 @@ char replies[100][] = {
 	"THAT IS QUITE INTERESTING.",
 };
 
-// DATA FOR FINDING RIGHT REPLIES
+// данные для поиска реплик
+#define REPLIES_IDX_NUM (sizeof(replies_idx)/sizeof(int))
 int replies_idx[] = {
-	1,3,4,2,6,4,6,4,10,4,14,3,17,3,20,2,22,3,25,3
-	28,4,28,4,32,3,35,5,40,9,40,9,40,9,40,9,40,9,40,9
-	49,2,51,4,55,4,59,4,63,1,63,1,64,5,69,5,74,2,76,4
-	80,3,83,7,90,3,93,6,99,7,106,6
+	 0,3, 3,1, 5,3, 5,3, 9,3, // 0...4
+	13,2,16,2,19,1,21,2,24,2, // 5...9
+	27,3,27,3,31,2,34,4,39,8, // 10...14
+	39,8,39,8,39,8,39,8,39,8, // 15...19
+	48,1,50,3,54,3,58,3,62,0, // 20...24
+	62,0,63,4,68,4,73,1,75,3, // 25...29
+	79,2,82,6,89,2,92,5,98,6, // 30...34
+	105,5, // 35
 };
 
-int s(36),r(36), n(36);
-int n1=36, n2=12, n3=112;
-char str_in[100];
+int main()
+{
+	int keyword_idx = 0; // индекс ключевого слова
+	char * keyword_ptr; // указатель на ключевое во входной строке
+	int s[KEYWORDS_NUM];
+	int r[KEYWORDS_NUM];
+	int n[KEYWORDS_NUM];
+	char str_in[STRING_SIZE] = " "; // входная строка
+	char str_p[STRING_SIZE] = " "; // прошлая входная строка
+	char str_c[STRING_SIZE] = " ";
+	char str_tmp[STRING_SIZE];
 
-120 FOR X=1 TO N1+N2+N3:READ Z$:NEXT X:REM SAME AS RESTORE
-130 FOR X=1 TO N1
-140 READ S(X),L:R(X)=S(X):N(X)=S(X)+L-1
-150 NEXT X
-170
-	while(1) {
-		printf("\HI! I'M ELIZA. WHAT'S YOUR PROBLEM?\n");
-		//-----USER INPUT SECTION-----
-		printf(">");
-		gets(str_in);
-201 I$=" "+I$+"  "
-	// GET RID OF APOSTROPHES
-220 FOR L=1 TO LEN(I$)
-230 IF MID$(I$,L,1)="'"THEN I$=LEFT$(I$,L-1)+RIGHT$(I$,LEN(I$)-L):GOTO 230
-240 IF L+4<=LEN(I$)THEN IF MID$(I$,L,4)="SHUT" THEN PRINT"SHUT UP...":END
-250 NEXT L
-255 IF I$=P$ THEN PRINT "PLEASE DON'T REPEAT YOURSELF!":GOTO 170
-	// -----FIND KEYWORD IN I$-----
-290 RESTORE
-295 S=0
-300 FOR K=1 TO N1
-310 READ K$
-315 IF S>0 THEN 360
-320 FOR L=1 TO LEN(I$)-LEN(K$)+1
-340 IF MID$(I$,L,LEN(K$))=K$THEN S=K:T=L:F$=K$
-350 NEXT L
-360 NEXT K
-365 IF S>0 THEN K=S:L=T:GOTO 390
-370 K=36:GOTO 570 //REM WE DIDN'T FIND ANY KEYWORDS
+	printf("%s\n", copyright);
 
-	// TAKE RIGHT PART OF STRING AND CONJUGATE IT
-	// USING THE LIST OF STRINGS TO BE SWAPPED
-
-420 RESTORE:FOR X=1 TO N1:READ Z$:NEXT X:REM SKIP OVER KEYWORDS
-430 C$=" "+RIGHT$(I$,LEN(I$)-LEN(F$)-L+1)
-440 FOR X=1 TO N2/2
-450 READ S$,R$
-460 FOR L= 1 TO LEN(C$)
-470 IF L+LEN(S$)>LEN(C$) THEN 510
-480 IF MID$(C$,L,LEN(S$))<>S$ THEN 510
-490 C$=LEFT$(C$,L-1)+R$+RIGHT$(C$,LEN(C$)-L-LEN(S$)+1)
-495 L=L+LEN(R$)
-500 GOTO 540
-510 IF L+LEN(R$)>LEN(C$)THEN 540
-520 IF MID$(C$,L,LEN(R$))<>R$ THEN 540
-530 C$=LEFT$(C$,L-1)+S$+RIGHT$(C$,LEN(C$)-L-LEN(R$)+1)
-535 L=L+LEN(S$)
-540 NEXT L
-550 NEXT X
-555 IF MID$(C$,2,1)=" "THEN C$=RIGHT$(C$,LEN(C$)-1):REM ONLY 1 SPACE
-
-	// NOW USING THE KEYWORD NUMBER (K) GET REPLY
-
-590 RESTORE:FOR X= 1 TO N1+N2:READ Z$:NEXT X
-600 FOR X=1 TO R(K):READ F$:NEXT X:REM READ RIGHT REPLY
-610 R(K)=R(K)+1: IF R(K)>N(K) THEN R(K)=S(K)
-620 IF RIGHT$(F$,1 )<>"*" THEN PRINT F$:P$=I$:GOTO 170
-630 PRINT LEFT$(F$,LEN(F$)-1);C$
-640 P$=I$:
+	for (int i = 0; i < KEYWORDS_NUM; i++) {
+		s[i] = replies_idx[i * 2];
+		int j = replies_idx[i * 2 + 1];	
+		r[i] = s[i];
+		n[i] = s[i] + j;
 	}
 
+	printf("%s\n", elize_hi);
+
+	while(1) {
+		// ввод строки
+		{
+			printf(">");
+
+			str_tmp[0] = 0;
+			gets(str_tmp);
+
+			// устранение апострофа
+			while(1) {
+				char * p = strchr(str_tmp, '\'');
+				if (p == NULL)
+					break;
+				*p = 0;
+				p++;
+				strncat(str_tmp, p, STRING_SIZE);
+			}
+
+			strncpy(str_in, " ", STRING_SIZE);
+			strncat(str_in, str_tmp, STRING_SIZE);
+			strncat(str_in, " ", STRING_SIZE);
+		}
+	
+		if (strstr(str_in, elize_shut) != NULL) {
+			printf("%s\n", elize_shutup);
+			return 0;
+		}
+
+		if (strcmp(str_in, str_p) == 0) {
+			printf("%s\n", elize_dontrepeat);
+			continue;
+		}
+		
+		// поиск ключевого слова во входной строке
+		keyword_ptr = NULL;
+		keyword_idx = KEYWORDS_NUM - 1;
+		for (int i = 1; i < KEYWORDS_NUM; i++) {
+			keyword_ptr = strstr(str_in, keywords[i]);
+			if (keyword_ptr != NULL) {
+				keyword_idx = i;
+				break;
+			}
+		}
+
+		/*
+		 * Спрягаем правую часть строки
+		 * используя список строк, подлежащих замене
+		 */
+		if (keyword_ptr != NULL) {
+			// правая часть строки после ключевого слова
+			strncpy(str_c , keyword_ptr + strlen(keywords[keyword_idx]), STRING_SIZE);
+
+			for (int i = 0; i < CONJUGATION_SIZE/2; i++) {
+				char * s_ptr = conjugation[i * 2]; // что искать 
+				char * r_ptr = conjugation[i * 2 + 1]; // на что менять
+				char * f_ptr = strstr(str_c, s_ptr); // указатель на найденное слово
+
+				if (f_ptr == NULL)
+					continue;
+
+				// копирую правую часть				
+				*f_ptr = 0;
+				strncpy(str_tmp, str_c, STRING_SIZE);
+				// подставляю замену
+				strncat(str_tmp, r_ptr, STRING_SIZE);
+				// подставляю левую часть
+				strncpy(str_tmp, f_ptr + strlen(s_ptr), STRING_SIZE);
+				// сохраняю
+				strncat(str_c, str_tmp, STRING_SIZE);
+			}
+
+			// удаляю пробелы в начале строки
+			for(int i = 1; i < strlen(str_c); i++) {
+				if (str_c[i] != ' ') {
+					strncpy(str_tmp, str_c + i, STRING_SIZE);
+					// сохраняю
+					strncpy(str_c, str_tmp, STRING_SIZE);
+					break;
+				}
+			}
+		}
+		else 
+			str_c[0] = 0;
+
+		// используя номер ключевого слова, получаем ответ
+		{
+			char * replies_ptr = replies[r[keyword_idx]];
+
+			r[keyword_idx]++;
+			if (r[keyword_idx] > n[keyword_idx])
+				r[keyword_idx] = s[keyword_idx];
+
+			if (replies_ptr[strlen(replies_ptr) - 1] == '*') {
+				strncpy(str_tmp, replies_ptr, STRING_SIZE);
+				str_tmp[strlen(replies_ptr) - 1] = 0;
+				printf("%s %s\n", str_tmp, str_c);
+			}
+			else
+				printf("%s\n", replies_ptr);
+			strncpy(str_p, str_in, STRING_SIZE);
+		}
+	}
+	return 0;
+}
