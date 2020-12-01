@@ -1,7 +1,7 @@
 # @file makefile
 # @brief build Makefile
 
-OUTFILE	= elize1
+OUTFILE	= bin/elize1
 
 INCLUDE ?=
 SFILES	?=

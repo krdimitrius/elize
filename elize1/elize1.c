@@ -215,6 +215,12 @@ int main()
 			str_tmp[0] = 0;
 			gets(str_tmp);
 
+			// все буквы должны быть заглавными
+			for(int i = 0; i < strlen(str_tmp); i++) {
+				if ((str_tmp[i] >= 97) && (str_tmp[i] <= 122))
+					 str_tmp[i] -= 32;
+			}
+
 			// устранение апострофа
 			while(1) {
 				char * p = strchr(str_tmp, '\'');
