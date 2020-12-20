@@ -180,6 +180,45 @@ int replies_idx[] = {
 	105,5, // 35
 };
 
+// Безопасный gets
+/*
+char *gets_s(char *s, int len)
+{
+    fgets(s, len, stdin);
+    char *ptr = strchr(s, '\n');
+    if (*ptr)
+        *ptr = '\0';
+}
+*/
+
+char *gets_s(char *s, int len)
+{
+	/*очистка буфера ввода */
+	fflush(stdin);
+
+    int i, k = getchar();
+
+    /* Возвращаем NULL если ничего не введено */
+    if (k == EOF)
+        return NULL;
+
+    /* Считываем и копируем в буфер символы пока не достигнем конца строки или файла */
+    for (i = 0; (k != EOF) && (k != '\n') && (i < (len - 1)); ++i) {
+        s[i] = k;
+        k = getchar();
+
+        /* При обнаружении ошибки результирующий буфер непригоден */
+        if (k == EOF && !feof(stdin))
+            return NULL;
+    }
+
+    /* Нуль-терминируем и возвращаем буфер в случае успеха.
+    Символ перевода строки в буфере не хранится. */
+    s[i] = '\0';
+
+    return s;
+}
+
 int main()
 {
 	int keyword_idx = 0; // индекс ключевого слова
@@ -210,13 +249,7 @@ int main()
 
 			str_tmp[0] = 0;
 
-			// Безопасный gets
-            {
-	            fgets(str_tmp, sizeof(str_tmp), stdin);
-                char *ptr = strchr(str_tmp, '\n');
-                if (*ptr)
-                    *ptr = 0;
-            }
+            gets_s(str_tmp, sizeof(str_tmp));
 
 			// все буквы должны быть заглавными
 			for(int i = 0; i < strlen(str_tmp); i++) {
