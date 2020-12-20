@@ -1,6 +1,5 @@
 /**
- * @file tpvalg.c
- * @author Krysin Dmitriy <krdimitrius@gmail.comrysin@tecon.ru>
+ * @author Krysin Dmitriy <krdimitrius@gmail.com>
  * @date 2020
  * @brief ELIZE
  */
@@ -17,9 +16,6 @@
 
 char copyright[] = "\n  ELIZA/DOCTOR"
 "\n  CREATED BY JOSEPH WEIZENBAUM"
-"\n  THIS VERSION BY JEFF SHRAGER"
-"\n  EDITED AND MODIFIED FOR C MITS 8K BASIC 4.0 BY STEVE NORTH"
-"\n  CREATIVE COMPUTING PO BOX 789-M MORRISTOWN NJ 07960"
 "\n";
 
 char elize_hi[] = "HI! I'M ELIZA. WHAT'S YOUR PROBLEM?";
@@ -213,7 +209,14 @@ int main()
 			printf(">");
 
 			str_tmp[0] = 0;
-			gets(str_tmp);
+
+			// Безопасный gets
+            {
+	            fgets(str_tmp, sizeof(str_tmp), stdin);
+                char *ptr = strchr(str_tmp, '\n');
+                if (*ptr)
+                    *ptr = 0;
+            }
 
 			// все буквы должны быть заглавными
 			for(int i = 0; i < strlen(str_tmp); i++) {
@@ -233,7 +236,7 @@ int main()
 
 			strncpy(str_in, " ", STRING_SIZE);
 			strncat(str_in, str_tmp, STRING_SIZE);
-			strncat(str_in, " ", STRING_SIZE);
+			strncat(str_in, " ", STRING_SIZE - 1);
 		}
 	
 		if (strstr(str_in, elize_shut) != NULL) {
